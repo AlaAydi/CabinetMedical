@@ -4,7 +4,8 @@ from rest_framework.response import Response
 from rest_framework import status, generics
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import UserRegisterSerializer, PatientSerializer, PatientCreateSerializer, AdminPatientListSerializer
+from .serializers import UserRegisterSerializer, PatientSerializer, PatientCreateSerializer, AdminPatientListSerializer, \
+    PatientMedicalFileSerializer
 from .models import User, Patient
 from .permissions import IsAdminRole
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -102,3 +103,12 @@ class PatientUpdateView(generics.UpdateAPIView):
             return Patient.objects.get(user__id=user_id)
         except Patient.DoesNotExist:
             raise Http404("Patient non trouvé pour cet utilisateur")
+class PatientMedicalFileView(generics.RetrieveUpdateAPIView):
+    queryset = Patient.objects.all()
+    serializer_class = PatientMedicalFileSerializer
+    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [IsAdminRole]
+
+    def get_object(self):
+        user_id = self.kwargs['pk']
+        return Patient.objects.get(user__id=user_id)

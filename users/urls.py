@@ -9,4 +9,6 @@ urlpatterns = [
     path('admin/patients/', PatientListView.as_view()),
     path('admin/patients/add/', PatientCreateView.as_view()),
     path('admin/patients/<int:pk>/update/', PatientUpdateView.as_view()),
+    path('admin/patients/<int:pk>/medical-file/', PatientMedicalFileView.as_view()),
+
 ]

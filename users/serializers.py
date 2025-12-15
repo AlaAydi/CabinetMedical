@@ -88,3 +88,9 @@ class AdminPatientListSerializer(serializers.ModelSerializer):
             'role',
             'is_approved'
         ]
+
+class PatientMedicalFileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Patient
+        fields = ['id', 'user', 'medical_file']
+        read_only_fields = ['id', 'user']
