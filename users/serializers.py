@@ -18,10 +18,9 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             is_approved=False
         )
         return user
-
 class PatientSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(source='user.username')
-    email = serializers.EmailField(source='user.email')
+    name = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
 
     class Meta:
         model = Patient
@@ -33,6 +32,22 @@ class PatientSerializer(serializers.ModelSerializer):
             'status',
             'medical_file'
         ]
+
+    def update(self, instance, validated_data):
+        # Mettre à jour Patient
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        # Synchroniser is_approved avec le status
+        if 'status' in validated_data:
+            if validated_data['status'] == 'Actif':
+                instance.user.is_approved = True
+            elif validated_data['status'] == 'Inactif':
+                instance.user.is_approved = False
+            instance.user.save()
+
+        instance.save()
+        return instance
 
 
 class PatientCreateSerializer(serializers.ModelSerializer):

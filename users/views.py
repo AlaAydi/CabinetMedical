@@ -1,3 +1,4 @@
+from django.http import Http404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
@@ -91,7 +92,13 @@ class PatientCreateView(generics.CreateAPIView):
     parser_classes = [MultiPartParser, FormParser]
 
 class PatientUpdateView(generics.UpdateAPIView):
-    queryset = Patient.objects.all()
     serializer_class = PatientSerializer
     permission_classes = [IsAdminRole]
     parser_classes = [MultiPartParser, FormParser]
+
+    def get_object(self):
+        user_id = self.kwargs['pk']
+        try:
+            return Patient.objects.get(user__id=user_id)
+        except Patient.DoesNotExist:
+            raise Http404("Patient non trouvé pour cet utilisateur")
