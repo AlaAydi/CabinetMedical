@@ -1,14 +1,15 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, generics
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import UserRegisterSerializer
-from .models import User
+from .serializers import UserRegisterSerializer, PatientSerializer, PatientCreateSerializer, AdminPatientListSerializer
+from .models import User, Patient
 from .permissions import IsAdminRole
+from rest_framework.parsers import MultiPartParser, FormParser
+
 from rest_framework.permissions import IsAuthenticated
 from .utils import send_admin_notification, send_approval_email
-
 # Inscription doctor/patient
 class UserRegisterView(APIView):
     def post(self, request):
@@ -69,3 +70,28 @@ class ApproveUserView(APIView):
             return Response({"message": "Compte approuvé avec succès"})
         except User.DoesNotExist:
             return Response({"error": "Utilisateur introuvable"}, status=404)
+
+
+#partie patient
+class PatientListView(generics.ListAPIView):
+    serializer_class = AdminPatientListSerializer
+    permission_classes = [IsAdminRole]
+
+    def get_queryset(self):
+        return User.objects.filter(
+            role='PATIENT',
+            is_approved=True
+        )
+
+
+
+class PatientCreateView(generics.CreateAPIView):
+    serializer_class = PatientCreateSerializer
+    permission_classes = [IsAdminRole]
+    parser_classes = [MultiPartParser, FormParser]
+
+class PatientUpdateView(generics.UpdateAPIView):
+    queryset = Patient.objects.all()
+    serializer_class = PatientSerializer
+    permission_classes = [IsAdminRole]
+    parser_classes = [MultiPartParser, FormParser]
