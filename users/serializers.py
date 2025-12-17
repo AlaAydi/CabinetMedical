@@ -1,6 +1,5 @@
 from rest_framework import serializers
-from .models import User, Patient
-
+from .models import User, Patient, Doctor
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -18,37 +17,25 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             is_approved=False
         )
         return user
+
 class PatientSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source='user.username', read_only=True)
     email = serializers.EmailField(source='user.email', read_only=True)
 
     class Meta:
         model = Patient
-        fields = [
-            'id',
-            'name',
-            'email',
-            'address',
-            'status',
-            'medical_file'
-        ]
+        fields = ['id', 'name', 'email', 'address', 'status', 'medical_file']
 
     def update(self, instance, validated_data):
-        # Mettre à jour Patient
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
-        # Synchroniser is_approved avec le status
         if 'status' in validated_data:
-            if validated_data['status'] == 'Actif':
-                instance.user.is_approved = True
-            elif validated_data['status'] == 'Inactif':
-                instance.user.is_approved = False
+            instance.user.is_approved = validated_data['status'] == 'Actif'
             instance.user.save()
 
         instance.save()
         return instance
-
 
 class PatientCreateSerializer(serializers.ModelSerializer):
     name = serializers.CharField(write_only=True)
@@ -67,7 +54,6 @@ class PatientCreateSerializer(serializers.ModelSerializer):
             role='PATIENT',
             is_approved=True
         )
-
         patient = Patient.objects.create(
             user=user,
             address=validated_data['address'],
@@ -81,16 +67,48 @@ class AdminPatientListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = [
-            'id',
-            'name',
-            'email',
-            'role',
-            'is_approved'
-        ]
+        fields = ['id', 'name', 'email', 'role', 'is_approved']
 
 class PatientMedicalFileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Patient
         fields = ['id', 'user', 'medical_file']
         read_only_fields = ['id', 'user']
+
+class DoctorCreateSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(write_only=True)
+    email = serializers.EmailField(write_only=True)
+    password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = Doctor
+        fields = [
+            'id',
+            'username',
+            'email',
+            'password',
+            'specialty',
+            'phone',
+            'schedule',
+            'image'
+        ]
+
+    def create(self, validated_data):
+        username = validated_data.pop('username')
+        email = validated_data.pop('email')
+        password = validated_data.pop('password')
+
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+            role='DOCTOR',
+            is_approved=True
+        )
+
+        doctor = Doctor.objects.create(
+            user=user,
+            **validated_data
+        )
+
+        return doctor
