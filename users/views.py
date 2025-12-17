@@ -1,13 +1,15 @@
+from django.core.exceptions import ValidationError
 from django.http import Http404
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import UserRegisterSerializer, PatientSerializer, PatientCreateSerializer, AdminPatientListSerializer, \
-    PatientMedicalFileSerializer, DoctorCreateSerializer
-from .models import User, Patient, Doctor
-from .permissions import IsAdminRole
+    PatientMedicalFileSerializer, DoctorCreateSerializer, ConsultationSerializer
+from .models import User, Patient, Doctor, Consultation
+from .permissions import IsAdminRole, IsDoctorRole
 from rest_framework.parsers import MultiPartParser, FormParser
 
 class UserRegisterView(APIView):
@@ -56,8 +58,10 @@ class ApproveUserView(APIView):
 class PatientListView(generics.ListAPIView):
     serializer_class = AdminPatientListSerializer
     permission_classes = [IsAdminRole]
+
     def get_queryset(self):
         return User.objects.filter(role='PATIENT', is_approved=True)
+
 
 class PatientCreateView(generics.CreateAPIView):
     serializer_class = PatientCreateSerializer
@@ -108,3 +112,16 @@ class DoctorDeleteView(generics.DestroyAPIView):
     permission_classes = [IsAdminRole]
     lookup_field = 'id'
     queryset = Doctor.objects.all()
+
+
+
+
+class ConsultationCreateView(generics.CreateAPIView):
+    serializer_class = ConsultationSerializer
+    permission_classes = [IsAuthenticated, (IsAdminRole | IsDoctorRole)]
+
+    def perform_create(self, serializer):
+        try:
+            serializer.save()
+        except Exception as e:
+            raise ValidationError(str(e))

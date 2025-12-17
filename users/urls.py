@@ -14,4 +14,8 @@ urlpatterns = [
     path('admin/doctors/create/', DoctorCreateView.as_view(), name='doctor-create'),
     path('admin/doctors/<int:id>/update/', DoctorUpdateView.as_view(), name='doctor-update'),
     path('admin/doctors/<int:id>/delete/', DoctorDeleteView.as_view(), name='doctor-delete'),
+
+path('admin/consultations/', ConsultationCreateView.as_view()),
+path('admin/consultations/create/', ConsultationCreateView.as_view()),
+
 ]

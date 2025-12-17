@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import User, Patient, Doctor
+from .models import User, Patient, Doctor, Consultation
+
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -112,3 +113,22 @@ class DoctorCreateSerializer(serializers.ModelSerializer):
         )
 
         return doctor
+
+
+
+class ConsultationSerializer(serializers.ModelSerializer):
+    doctor_name = serializers.CharField(source='doctor.user.username', read_only=True)
+    patient_name = serializers.CharField(source='patient.user.username', read_only=True)
+
+    class Meta:
+        model = Consultation
+        fields = [
+            'id',
+            'doctor',
+            'doctor_name',
+            'patient',
+            'patient_name',
+            'start_time',
+            'end_time'
+        ]
+        read_only_fields = ['end_time']

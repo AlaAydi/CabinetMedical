@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from datetime import timedelta
+from django.core.exceptions import ValidationError
 
 class User(AbstractUser):
     ROLE_CHOICES = (
@@ -41,3 +43,40 @@ class Doctor(models.Model):
 
     def __str__(self):
         return self.user.username
+
+
+
+class Consultation(models.Model):
+    doctor = models.ForeignKey(
+        Doctor,
+        on_delete=models.CASCADE,
+        related_name='consultations'
+    )
+    patient = models.ForeignKey(
+        Patient,
+        on_delete=models.CASCADE,
+        related_name='consultations'
+    )
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField(blank=True)
+
+    def save(self, *args, **kwargs):
+        # durée fixe 30 min
+        self.end_time = self.start_time + timedelta(minutes=30)
+
+        conflict = Consultation.objects.filter(
+            doctor=self.doctor,
+            start_time__lt=self.end_time,
+            end_time__gt=self.start_time
+        )
+
+        if self.pk:
+            conflict = conflict.exclude(pk=self.pk)
+
+        if conflict.exists():
+            raise ValidationError("Ce docteur a déjà une consultation à cette heure")
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.doctor.user.username} - {self.patient.user.username}"
